@@ -582,7 +582,11 @@ public class BaseTaskHubService {
 
         //2.更新任务明细状态
         extExecTaskItemMapper.batchUpdateTaskItemStatus(List.of(id), userId, orgId, projectId, ExecStatus.STOPPED.name());
-        handleStopTask(List.of(id));
+        handleStopTaskAsync(List.of(id));
+    }
+
+    private void handleStopTaskAsync(List<String> ids) {
+        Thread.startVirtualThread(() -> handleStopTask(ids));
     }
 
     private void handleStopTask(List<String> ids) {
@@ -590,16 +594,20 @@ public class BaseTaskHubService {
         List<ExecTaskItem> list = extExecTaskItemMapper.getResourcePoolsByTaskIds(ids);
         Map<String, List<ExecTaskItem>> resourcePoolMaps = list.stream().collect(Collectors.groupingBy(ExecTaskItem::getResourcePoolId));
         resourcePoolMaps.forEach((k, v) -> {
-            //判断资源池类型
-            TestResourcePoolReturnDTO testResourcePoolDTO = testResourcePoolService.getTestResourcePoolDetail(k);
-            boolean isK8SResourcePool = StringUtils.equals(testResourcePoolDTO.getType(), ResourcePoolTypeEnum.K8S.getName());
-            if (isK8SResourcePool) {
-                List<String> taskIds = list.stream().map(ExecTaskItem::getTaskId).distinct().toList();
-                //K8S
-                handleK8STask(taskIds, testResourcePoolDTO);
-            } else {
-                Map<String, List<ExecTaskItem>> nodeItem = list.stream().collect(Collectors.groupingBy(ExecTaskItem::getResourcePoolNode));
-                handleNodeTask(nodeItem);
+            try {
+                //判断资源池类型
+                TestResourcePoolReturnDTO testResourcePoolDTO = testResourcePoolService.getTestResourcePoolDetail(k);
+                boolean isK8SResourcePool = StringUtils.equals(testResourcePoolDTO.getType(), ResourcePoolTypeEnum.K8S.getName());
+                if (isK8SResourcePool) {
+                    List<String> taskIds = list.stream().map(ExecTaskItem::getTaskId).distinct().toList();
+                    //K8S
+                    handleK8STask(taskIds, testResourcePoolDTO);
+                } else {
+                    Map<String, List<ExecTaskItem>> nodeItem = list.stream().collect(Collectors.groupingBy(ExecTaskItem::getResourcePoolNode));
+                    handleNodeTask(nodeItem);
+                }
+            } catch (Exception e) {
+                LogUtils.error(e);
             }
         });
     }
@@ -640,7 +648,7 @@ public class BaseTaskHubService {
         execTaskItemMapper.deleteByExample(itemExample);
         //3.删除任务与报告关联关系
         deleteReportRelateTask(List.of(id));
-        handleStopTask(List.of(id));
+        handleStopTaskAsync(List.of(id));
     }
 
     private void deleteReportRelateTask(List<String> ids) {
@@ -657,7 +665,7 @@ public class BaseTaskHubService {
             extExecTaskMapper.batchUpdateTaskStatus(ids, userId, orgId, projectId, ExecStatus.STOPPED.name());
             //2.更新任务明细状态
             extExecTaskItemMapper.batchUpdateTaskItemStatus(ids, userId, orgId, projectId, ExecStatus.STOPPED.name());
-            handleStopTask(ids);
+            handleStopTaskAsync(ids);
         }
 
     }
@@ -684,7 +692,7 @@ public class BaseTaskHubService {
             execTaskItemMapper.deleteByExample(itemExample);
             //3.删除任务与报告关联关系
             deleteReportRelateTask(ids);
-            handleStopTask(ids);
+            handleStopTaskAsync(ids);
         }
     }
 
@@ -700,24 +708,31 @@ public class BaseTaskHubService {
         //1.更新任务明细状态
         extExecTaskItemMapper.batchUpdateTaskItemStatusByIds(List.of(id), userId, orgId, projectId, ExecStatus.STOPPED.name());
         //2.通过任务项id停止任务
-        handleStopTaskItem(List.of(id));
+        handleStopTaskItemAsync(List.of(id));
     }
 
+    private void handleStopTaskItemAsync(List<String> ids) {
+        Thread.startVirtualThread(() -> handleStopTaskItem(ids));
+    }
 
     private void handleStopTaskItem(List<String> ids) {
         List<ExecTaskItem> execTaskItems = extExecTaskItemMapper.getResourcePoolsByItemIds(ids);
         Map<String, List<ExecTaskItem>> resourcePoolMaps = execTaskItems.stream().collect(Collectors.groupingBy(ExecTaskItem::getResourcePoolId));
         resourcePoolMaps.forEach((k, v) -> {
-            //判断资源池类型
-            TestResourcePoolReturnDTO testResourcePoolDTO = testResourcePoolService.getTestResourcePoolDetail(k);
-            boolean isK8SResourcePool = StringUtils.equals(testResourcePoolDTO.getType(), ResourcePoolTypeEnum.K8S.getName());
-            if (isK8SResourcePool) {
-                List<String> itemIds = v.stream().map(ExecTaskItem::getId).toList();
-                //K8S 通过任务项id停止任务项
-                handleK8STaskItem(itemIds, testResourcePoolDTO);
-            } else {
-                Map<String, List<ExecTaskItem>> nodeItem = execTaskItems.stream().collect(Collectors.groupingBy(ExecTaskItem::getResourcePoolNode));
-                handleNodeTask(nodeItem);
+            try {
+                //判断资源池类型
+                TestResourcePoolReturnDTO testResourcePoolDTO = testResourcePoolService.getTestResourcePoolDetail(k);
+                boolean isK8SResourcePool = StringUtils.equals(testResourcePoolDTO.getType(), ResourcePoolTypeEnum.K8S.getName());
+                if (isK8SResourcePool) {
+                    List<String> itemIds = v.stream().map(ExecTaskItem::getId).toList();
+                    //K8S 通过任务项id停止任务项
+                    handleK8STaskItem(itemIds, testResourcePoolDTO);
+                } else {
+                    Map<String, List<ExecTaskItem>> nodeItem = execTaskItems.stream().collect(Collectors.groupingBy(ExecTaskItem::getResourcePoolNode));
+                    handleNodeTask(nodeItem);
+                }
+            } catch (Exception e) {
+                LogUtils.error(e);
             }
         });
     }
@@ -739,7 +754,7 @@ public class BaseTaskHubService {
             //1.更新任务明细状态
             extExecTaskItemMapper.batchUpdateTaskItemStatusByIds(itemIds, userId, orgId, projectId, ExecStatus.STOPPED.name());
             //2.通过任务项id停止任务
-            handleStopTaskItem(itemIds);
+            handleStopTaskItemAsync(itemIds);
         }
 
     }
