@@ -235,7 +235,7 @@
     },
     {
       title: 'ms.taskCenter.lastFinishTime',
-      dataIndex: 'lastFinishTime',
+      dataIndex: 'lastTime',
       width: 170,
       sortable: {
         sortDirections: ['ascend', 'descend'],
@@ -367,7 +367,7 @@
         ...item,
         runRuleLoading: false,
         createTime: item.createTime ? dayjs(item.createTime).format('YYYY-MM-DD HH:mm:ss') : '-',
-        lastFinishTime: item.lastFinishTime ? dayjs(item.lastFinishTime).format('YYYY-MM-DD HH:mm:ss') : '-',
+        lastTime: item.lastTime && item.lastTime !== -1 ? dayjs(item.lastTime).format('YYYY-MM-DD HH:mm:ss') : '-',
         nextTime: item.nextTime ? dayjs(item.nextTime).format('YYYY-MM-DD HH:mm:ss') : '-',
       };
     }
