@@ -363,8 +363,6 @@
 
 <style scoped lang="less">
   .work-bench-content {
-    @apply overflow-x-auto;
-    .ms-scroll-bar();
     .header-setting {
       position: sticky;
       top: 0;
@@ -386,6 +384,7 @@
 <style lang="less">
   .card-wrapper {
     padding: 24px;
+    min-width: 356px;
     box-shadow: 0 0 10px rgba(120 56 135/ 5%);
     @apply rounded-xl bg-white;
     &.card-min-height {
